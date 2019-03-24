@@ -1,0 +1,21 @@
+// Ages in this file are specified in days.
+{
+  // In a rules file, max_age must be specified.
+  // The --max-age argument will be ignored when using a rules file.
+  "max_age": 45,
+
+  // feed_specific is also required.
+  // It could be an empty list (`[]`), but then why are you using a rules file?
+  "feed_specific": [
+    {
+      // Add comment with Feed Name for maintainability
+      "feed_id": 450,
+      "max_age": 1
+    },
+    {
+      // Another Feed
+      "feed_id": 10761,
+      "max_age": 60
+    },
+  ]
+}
