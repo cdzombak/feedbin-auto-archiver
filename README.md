@@ -125,7 +125,7 @@ This is the [maximum](https://docs.python.org/3/library/datetime.html#datetime.t
 
 ## License
 
-TKTK: decide on license
+[MIT License](https://choosealicense.com/licenses/mit/#).
 
 ## Author
 
