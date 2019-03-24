@@ -24,9 +24,17 @@ I know this works on macOS and Ubuntu; it should work pretty much anywhere Pytho
 - Clone the repo
 - Run `make bootstrap` to create a virtualenv for the project & install depepdencies
 
-### Cron
+### Crontab Example
 
-TKTK: add cron once I've deployed this myself
+This is how I’m running this tool on my personal server:
+
+```
+# Feedbin Archiver
+# Runs every 6 hours == 4x/day
+0   */6 *   *   *   /home/cdzombak/scripts/feedbin-auto-archiver/venv/bin/python3 /home/cdzombak/scripts/feedbin-auto-archiver/feedbin_archiver.py --rules-file /home/cdzombak/Dropbox/feedbin-archiver-rules.json --dry-run false
+```
+
+(Dropbox syncs my custom rules file up to the server.)
 
 ### Cleanup
 
