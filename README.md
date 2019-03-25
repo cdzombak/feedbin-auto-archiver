@@ -4,13 +4,13 @@
 
 ## Motivation
 
-Someone in the RSS/microblogging ecosystem — I forget who — recently posted something along the lines of “RSS shouldn’t be a source of stress. It’s okay to just mark it all as read and move on.”
+Someone in the microblogging/pro-RSS community — I forget who — recently posted something along the lines of “RSS shouldn’t be a source of stress. It’s okay to just mark it all as read and move on.”
 
-The same is true of podcasts. Pocket Casts has an auto-archive feature which is quite configurable on a per-feed basis, and that feature helps me avoid stress during times when I’ve fallen behind on podcasts.
+The same is true of podcasts. To help with that, Pocket Casts has an auto-archive feature which is quite configurable on a per-feed basis, and that feature helps me avoid stress during times when I’ve fallen behind on podcasts.
 
-But with RSS, I find myself hesitant to archive older stuff; I can’t help but worry, “what if there’s something I really should read down there somewhere?”
+With RSS, I find myself hesitant to archive older stuff; I can’t help but worry, “what if there’s something I really should read down there somewhere?”
 
-So I built this tool. It’s designed to be run on a periodic basis (2-4 times per day, maybe). It will mark as read everything in your Feedbin account older than some time period (30 days, by default), and it allows configuring a custom maximum unread “age” per feed.
+So I built this tool. It’s designed to be run on a periodic basis (2-4 times per day, perhaps). It will mark as read everything in your Feedbin account older than some time period (30 days, by default), and it allows configuring a custom maximum unread “age” per feed.
 
 ## Requirements
 
@@ -22,7 +22,7 @@ I know this works on macOS and Ubuntu; it should work pretty much anywhere Pytho
 ## Installation
 
 - Clone the repo
-- Run `make bootstrap` to create a virtualenv for the project & install depepdencies
+- Run `make bootstrap` to create a virtualenv for the project & install dependencies
 
 ### Crontab Example
 
@@ -93,7 +93,7 @@ The output is grep-able. For example, to find my blog feed, try `python feedbin_
 
 Credentials are supplied via the environment variables `FEEDBIN_ARCHIVER_USERNAME` and `FEEDBIN_ARCHIVER_PASSWORD`.
 
-Optionally, these can be stored in a `.env` file alongside the `feedbin_archiver` script. The script will automatically read environemnt variables from that file. (See `.env.sample` for an example.)
+Optionally, these can be stored in a `.env` file alongside the `feedbin_archiver` script. The script will automatically read environment variables from that file. (See `.env.sample` for an example.)
 
 ### Rules File
 
