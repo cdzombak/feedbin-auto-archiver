@@ -176,7 +176,7 @@ def run_archive(feedbin_api, rules, dry_run):
     if dry_run:
         print('Listing entries which would be archived...')
     else:
-        print('Deleting old entries...')
+        print('Archiving old entries...')
     now = dt.datetime.now(dt.timezone.utc)
     entries = feedbin_api.get_unread_entries()
     for entry in entries:
