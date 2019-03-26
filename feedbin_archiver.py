@@ -141,7 +141,7 @@ class Rules(object):
             raise Rules.SpecException('Rules file must contain a global max_age specification.')
         self.default_max_age = int(rules_dict['max_age'])
         if 'feed_specific' not in rules_dict:
-            raise Rules.SpecException('Rules file must contain a feed_rules list.')
+            raise Rules.SpecException('Rules file must contain a feed_specific rules list.')
         for rule in rules_dict['feed_specific']:
             if 'feed_id' not in rule or 'max_age' not in rule:
                 raise Rules.SpecException('Feed rule {} must include a feed_id and max_age.'.format(json.dumps(rule)))
