@@ -206,7 +206,7 @@ if __name__ == '__main__':
     feedbin_pass = os.getenv('FEEDBIN_ARCHIVER_PASSWORD')
     if not feedbin_user or not feedbin_pass:
         eprint("Feedbin username & password must be set using environment variables.")
-        eprint("Copy .env.template to .env and fill it out to provide credentials.")
+        eprint("Copy .env.sample to .env and fill it out to provide credentials.")
         sys.exit(1)
     feedbin_api = FeedbinAPI(feedbin_user, feedbin_pass)
     try:
