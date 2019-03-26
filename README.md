@@ -16,6 +16,7 @@ So I built this tool. It’s designed to be run on a periodic basis (2-4 times p
 
 - Python 3 + [virtualenv](https://docs.python-guide.org/dev/virtualenvs/#lower-level-virtualenv)
 - A [Feedbin](https://feedbin.com) account
+- Copy `.env.sample` to `.env` and fill out your credentials
 
 I know this works on macOS and Ubuntu; it should work pretty much anywhere Python 3 runs.
 
