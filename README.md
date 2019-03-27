@@ -12,6 +12,10 @@ With RSS, I find myself hesitant to archive older stuff; I can’t help but worr
 
 So I built this tool. It’s designed to be run on a periodic basis (2-4 times per day, perhaps). It will mark as read everything in your Feedbin account older than some time period (30 days, by default), and it allows configuring a custom maximum unread “age” per feed.
 
+### See Also 
+
+[Instapaper Auto Archiver](https://github.com/cdzombak/instapaper-auto-archiver) performs a similar function, for old unread Instapaper bookmarks.
+
 ## Requirements
 
 - Python 3 + [virtualenv](https://docs.python-guide.org/dev/virtualenvs/#lower-level-virtualenv)
