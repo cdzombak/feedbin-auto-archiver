@@ -179,6 +179,7 @@ def run_archive(feedbin_api, rules, dry_run):
         print('Archiving old entries...')
     now = dt.datetime.now(dt.timezone.utc)
     entries = feedbin_api.get_unread_entries()
+    count = 0
     for entry in entries:
         entry_ts = dt.datetime.strptime(entry['published'], "%Y-%m-%dT%H:%M:%S.%fZ").replace(tzinfo=dt.timezone.utc)
         entry_age = now - entry_ts
@@ -191,6 +192,9 @@ def run_archive(feedbin_api, rules, dry_run):
             print(entry['url'])
             if not dry_run:
                 feedbin_api.mark_read(entry['id'])
+            count += 1
+    print('')
+    print('{:d} entries affected.'.format(count))
 
 
 if __name__ == '__main__':
