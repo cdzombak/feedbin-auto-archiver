@@ -1,3 +1,5 @@
+#!venv/bin/python3
+
 import argparse
 import datetime as dt
 import json
