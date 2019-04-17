@@ -201,6 +201,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Mark old Feedbin entries as read.')
     parser.add_argument('action', nargs='?', default='run', choices={'run', 'list-feeds'})
     parser.add_argument('--dry-run', type=str2bool, default='true', help='True to print what would be archived, then exit. False to archive old unread entries. Default: True.')
+    parser.add_argument('--ignore-rules-validation', type=str2bool, default='false', help='True to ignore validation checks on the rules file; false to exit on validation errors. Default: False.')
     parser.add_argument('--max-age', type=int, default=30, help='Entries older than this many days will be marked as read. Ignored if using --rules-file. Default: 30.')
     parser.add_argument('--only-feed', type=int, default=None, help='Operate on only the given feed ID. Default: none.')
     parser.add_argument('--rules-file', default=None, help='Extended rules JSON file. See rules.sample.json for an example.')
@@ -241,7 +242,8 @@ if __name__ == '__main__':
             rules.validate_rules(feeds=feedbin_api.get_subscriptions())
         except Rules.ValidationException as e:
             eprint(e)
-            sys.exit(2)
+            if not args.ignore_rules_validation:
+                sys.exit(2)
         try:
             run_archive(feedbin_api, rules=rules, dry_run=args.dry_run)
         except FeedbinAPI.APIException as e:
