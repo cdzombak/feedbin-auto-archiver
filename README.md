@@ -33,7 +33,7 @@ No installation is required to use these images under Docker.
 
 Credentials are supplied via the environment variables `FEEDBIN_ARCHIVER_USERNAME` and `FEEDBIN_ARCHIVER_PASSWORD`.
 
-#### Docker
+#### Docker Configuration
 
 Credentials may be placed in a `.env` file and given to the `docker run` command like:
 
@@ -47,10 +47,10 @@ Alternatively, credentials may be passed directly to the `docker run` command li
 
 ```shell
 docker run --rm -e FEEDBIN_ARCHIVER_USERNAME=myusername -e FEEDBIN_ARCHIVER_PASSWORD=mypassword \
-  cdzombak/feedbin-auto-archiver:1 [OPTIONS]
+    cdzombak/feedbin-auto-archiver:1 [OPTIONS]
 ```
 
-#### Local Python
+#### Local Python Configuration
 
 Your credentials can be stored in a `.env` file alongside the `feedbin_archiver.py` script. The script will automatically read environment variables from that file. (See `.env.sample` for an example.)
 
@@ -66,11 +66,11 @@ The file must contain an object with two top-level keys: `max_age` and `feed_spe
 
 ```javascript
 "feed_specific": [
-  {
-    // Add comment with Feed Name for maintainability
-    "feed_id": 450,
-    "max_age": 1
-  }, // …
+    {
+        // Add comment with Feed Name for maintainability
+        "feed_id": 450,
+        "max_age": 1
+    }, // …
 ]
 ```
 
@@ -84,7 +84,7 @@ This is the [maximum](https://docs.python.org/3/library/datetime.html#datetime.t
 
 ## Usage
 
-### Docker
+### Docker Usage
 
 Invoke the script with `docker run`. To use a config file, you will need to mount it into the container.
 
@@ -95,7 +95,7 @@ docker run --rm --env-file .env \
     --rules-file /rules.json [--dry-run false] [OPTIONS]
 ```
 
-### Local Python
+### Local Python Usage
 
 1. Activate the virtualenv: `. venv/bin/activate`
 2. Run the script: `python feedbin_archiver.py [OPTIONS]`
@@ -152,7 +152,7 @@ The output is grep-able. For example, to find my blog feed, try `python feedbin_
 
 This is how I’m running this tool on my home server:
 
-```
+```text
 # Feedbin Archiver
 # Runs every 6 hours == 4x/day
 0   */6 *   *   *   docker run --rm --env-file $HOME/.config/feedbin/env -v $HOME/.config/feedbin/archiver_rules.json:/rules.json cdzombak/feedbin-auto-archiver:1 --rules-file /rules.json --dry-run false

@@ -2,9 +2,8 @@ FROM python:3-alpine
 ARG BIN_VERSION=<unknown>
 
 RUN mkdir /app
-COPY ./requirements.txt /app
-COPY ./*.py /app
-RUN pip install -r /app/requirements.txt
+COPY ./*.py ./requirements.txt /app/
+RUN pip install --no-cache-dir -r /app/requirements.txt
 ENTRYPOINT ["python", "/app/feedbin_archiver.py"]
 
 LABEL license="MIT"

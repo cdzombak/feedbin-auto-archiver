@@ -19,7 +19,6 @@ env:
   FPM_VERSION: 1.15.1
 
 jobs:
-
   meta:
     name: Derive Build Metadata
     runs-on: ubuntu-latest
@@ -30,7 +29,7 @@ jobs:
         id: bin_version
         run: echo "bin_version=$(./.version.sh)" >> "$GITHUB_OUTPUT"
       - name: bin_version
-        run: 'echo bin_version: ${{ steps.bin_version.outputs.bin_version }}'
+        run: "echo bin_version: ${{ steps.bin_version.outputs.bin_version }}"
       - name: Check if this is a running version tag update
         id: running_version_tag
         run: |
@@ -44,31 +43,30 @@ jobs:
               echo "is_running_version_tag_update=false" >> "$GITHUB_OUTPUT"
           fi
       - name: is_running_version_tag
-        run: 'echo is_running_version_tag_update: ${{ steps.running_version_tag.outputs.is_running_version_tag_update }}'
+        run: "echo is_running_version_tag_update: ${{ steps.running_version_tag.outputs.is_running_version_tag_update }}"
     outputs:
       project_name: ${{ github.event.repository.name }}
       bin_version: ${{ steps.bin_version.outputs.bin_version }}
       dockerhub_owner: ${{ github.repository_owner }}
       ghcr_owner: ${{ github.repository_owner }}
       is_prerelease: >-
-            ${{
-              steps.running_version_tag.outputs.is_running_version_tag_update != 'true' &&
-              startsWith(github.ref, 'refs/tags/v') &&
-                (contains(github.ref, '-alpha.')
-                || contains(github.ref, '-beta.')
-                || contains(github.ref, '-rc.'))
-            }}
+        ${{
+          steps.running_version_tag.outputs.is_running_version_tag_update != 'true' &&
+          startsWith(github.ref, 'refs/tags/v') &&
+            (contains(github.ref, '-alpha.')
+            || contains(github.ref, '-beta.')
+            || contains(github.ref, '-rc.'))
+        }}
       is_release: >-
-            ${{
-              steps.running_version_tag.outputs.is_running_version_tag_update != 'true' &&
-              startsWith(github.ref, 'refs/tags/v') &&
-                !(contains(github.ref, '-alpha.')
-                || contains(github.ref, '-beta.')
-                || contains(github.ref, '-rc.'))
-            }}
+        ${{
+          steps.running_version_tag.outputs.is_running_version_tag_update != 'true' &&
+          startsWith(github.ref, 'refs/tags/v') &&
+            !(contains(github.ref, '-alpha.')
+            || contains(github.ref, '-beta.')
+            || contains(github.ref, '-rc.'))
+        }}
       is_pull_request: ${{ github.event_name == 'pull_request' }}
       is_running_version_tag_update: ${{ steps.running_version_tag.outputs.is_running_version_tag_update }}
-
 
   lint:
     name: Lint
@@ -95,7 +93,6 @@ jobs:
             megalinter-reports
             mega-linter.log
 
-
   docker:
     name: Docker Images
     needs: [lint, meta]
@@ -105,7 +102,6 @@ jobs:
       contents: read
       packages: write
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -173,13 +169,12 @@ jobs:
           readme-filepath: ./README.md
           short-description: ${{ github.event.repository.description }}
 
-
   release:
     name: GitHub (Pre)Release
     needs: [lint, meta]
     if: >-
-          needs.meta.outputs.is_release == 'true' ||
-          needs.meta.outputs.is_prerelease == 'true'
+      needs.meta.outputs.is_release == 'true' ||
+      needs.meta.outputs.is_prerelease == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -189,7 +184,6 @@ jobs:
         with:
           prerelease: ${{ needs.meta.outputs.is_prerelease == 'true' }}
           generate_release_notes: true
-
 
   tags:
     name: Update Release Tags
