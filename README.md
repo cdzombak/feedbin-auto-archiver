@@ -86,7 +86,7 @@ This is the [maximum](https://docs.python.org/3/library/datetime.html#datetime.t
 
 ### Docker Usage
 
-Invoke the script with `docker run`. To use a config file, you will need to mount it into the container.
+Invoke the script with `docker run`. To use a rules file, you will need to mount it into the container.
 
 ```shell
 docker run --rm --env-file .env \
@@ -98,7 +98,7 @@ docker run --rm --env-file .env \
 ### Local Python Usage
 
 1. Activate the virtualenv: `. venv/bin/activate`
-2. Run the script: `python feedbin_archiver.py [OPTIONS]`
+2. Run the script: `python feedbin_archiver.py --rules-file /path/to/my_rules.json [--dry-run false] [OPTIONS]`
 
 Alternatively, invoke the virtualenv's Python interpreter directly:
 
