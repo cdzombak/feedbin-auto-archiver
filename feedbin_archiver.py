@@ -25,6 +25,10 @@ def chunks(a_list, n):
         yield a_list[i : i + n]
 
 
+def truncate_string_with_ellipsis(s, max_len):
+    return (s[: max_len - 3] + "...") if len(s) > max_len else s
+
+
 def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
@@ -221,9 +225,14 @@ def run_archive(feedbin_api, rules, dry_run):
         if entry_age > max_age:
             feed = feedbin_api.get_feed(entry["feed_id"])
             print("")
+            entry_title = entry.get("title")
+            if not entry_title and entry["summary"]:
+                entry_title = truncate_string_with_ellipsis(entry["summary"], 70)
+            if not entry_title and entry["content"]:
+                entry_title = truncate_string_with_ellipsis(entry["content"], 70)
             print(
                 "{feed_title:s}: {entry_title:s}".format(
-                    feed_title=feed["title"], entry_title=entry["title"]
+                    feed_title=feed["title"], entry_title=entry_title
                 )
             )
             print(
