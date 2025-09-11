@@ -326,9 +326,9 @@ if __name__ == "__main__":
     parser.add_argument(
         "--ignore-rules-validation",
         type=str2bool,
-        default="false",
-        help="True to ignore validation checks on the rules file; "
-        "false to exit on validation errors. Default: False.",
+        default="true",
+        help="False to fail with an error if given a rule for a feed you're "
+        "not subscribed to; True to ignore this case. Default: True.",
     )
     parser.add_argument(
         "--max-age",
