@@ -1,7 +1,6 @@
 // Ages in this file are specified in days.
 {
-  // In a rules file, max_age must be specified.
-  // The --max-age argument will be ignored when using a rules file.
+  // The --max-age argument will be ignored when using a rules file that specifies max_age globally.
   "max_age": 45,
 
   // feed_specific is also required.
@@ -15,7 +14,13 @@
     {
       // Another Feed
       "feed_id": 10761,
-      "max_age": 60
+      "keep_n": 2
+    },
+    {
+      // Feed with both max_age and keep_n (archives if EITHER condition is met)
+      "feed_id": 12345,
+      "max_age": 14,
+      "keep_n": 5
     },
   ]
 }

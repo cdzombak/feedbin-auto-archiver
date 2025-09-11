@@ -33,6 +33,13 @@ def eprint(*args, **kwargs):
     print(*args, file=sys.stderr, **kwargs)
 
 
+def parse_entry_date(entry):
+    """Parse the published date from an entry and return as UTC datetime."""
+    return dt.datetime.strptime(entry["published"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
+        tzinfo=dt.timezone.utc
+    )
+
+
 def str2bool(v):
     if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
@@ -156,25 +163,36 @@ class Rules(object):
         self.default_max_age = max_age
         self.only_feed_id = only_feed_id
         self.feed_rules = {}
+        self.keep_n_rules = {}
 
     def add_rules(self, rules_dict):
-        if "max_age" not in rules_dict:
-            raise Rules.SpecException(
-                "Rules file must contain a global max_age specification."
-            )
-        self.default_max_age = int(rules_dict["max_age"])
+        if "max_age" in rules_dict:
+            self.default_max_age = int(rules_dict["max_age"])
         if "feed_specific" not in rules_dict:
             raise Rules.SpecException(
                 "Rules file must contain a feed_specific rules list."
             )
         for rule in rules_dict["feed_specific"]:
-            if "feed_id" not in rule or "max_age" not in rule:
+            if "feed_id" not in rule:
                 raise Rules.SpecException(
-                    "Feed rule {} must include a feed_id and max_age.".format(
+                    "Feed rule {} must include a feed_id.".format(json.dumps(rule))
+                )
+
+            has_max_age = "max_age" in rule
+            has_keep_n = "keep_n" in rule
+
+            if not has_max_age and not has_keep_n:
+                raise Rules.SpecException(
+                    "Feed rule {} must include at least max_age or keep_n.".format(
                         json.dumps(rule)
                     )
                 )
-            self.feed_rules[int(rule["feed_id"])] = int(rule["max_age"])
+
+            feed_id = int(rule["feed_id"])
+            if has_max_age:
+                self.feed_rules[feed_id] = int(rule["max_age"])
+            if has_keep_n:
+                self.keep_n_rules[feed_id] = int(rule["keep_n"])
 
     def max_age(self, feed_id):
         retv = self.default_max_age
@@ -184,8 +202,24 @@ class Rules(object):
             return dt.timedelta.max
         return dt.timedelta(days=retv)
 
+    def keep_n(self, feed_id):
+        """Return the keep_n value for a feed, or None if not using keep_n."""
+        if feed_id in self.keep_n_rules:
+            if self.only_feed_id is not None and feed_id != self.only_feed_id:
+                return None  # Skip keep_n logic for feeds not being processed
+            return self.keep_n_rules[feed_id]
+        return None
+
+    def uses_keep_n(self, feed_id):
+        """Check if a feed uses keep_n logic."""
+        return feed_id in self.keep_n_rules
+
+    def uses_max_age(self, feed_id):
+        """Check if a feed uses max_age logic."""
+        return feed_id in self.feed_rules or feed_id not in self.keep_n_rules
+
     def validate_rules(self, feeds):
-        all_feed_ids = list(self.feed_rules.keys())
+        all_feed_ids = list(self.feed_rules.keys()) + list(self.keep_n_rules.keys())
         if self.only_feed_id is not None:
             all_feed_ids.append(self.only_feed_id)
         for feed_id in all_feed_ids:
@@ -215,15 +249,47 @@ def run_archive(feedbin_api, rules, dry_run):
         print("Archiving old entries...")
     now = dt.datetime.now(dt.timezone.utc)
     entries = feedbin_api.get_unread_entries()
-    count = 0
+
+    # Parse dates for all entries and sort by date (newest first)
     for entry in entries:
-        entry_ts = dt.datetime.strptime(
-            entry["published"], "%Y-%m-%dT%H:%M:%S.%fZ"
-        ).replace(tzinfo=dt.timezone.utc)
+        entry["parsed_date"] = parse_entry_date(entry)
+    entries.sort(key=lambda e: e["parsed_date"], reverse=True)
+
+    # Track counts per feed for keep_n logic
+    feed_counts = {}
+    count = 0
+
+    for entry in entries:
+        feed_id = entry["feed_id"]
+        entry_ts = entry["parsed_date"]
         entry_age = now - entry_ts
-        max_age = rules.max_age(entry["feed_id"])
-        if entry_age > max_age:
-            feed = feedbin_api.get_feed(entry["feed_id"])
+
+        should_archive = False
+        archive_reasons = []
+
+        if rules.uses_keep_n(feed_id):
+            feed_counts[feed_id] = feed_counts.get(feed_id, 0) + 1
+            keep_n = rules.keep_n(feed_id)
+            if keep_n is not None and feed_counts[feed_id] > keep_n:
+                should_archive = True
+                archive_reasons.append(
+                    "keeping only {keep:d} most recent entries".format(keep=keep_n)
+                )
+
+        if rules.uses_max_age(feed_id):
+            max_age = rules.max_age(feed_id)
+            if entry_age > max_age:
+                should_archive = True
+                archive_reasons.append(
+                    "{age:d} days old (max age is {max:d} days)".format(
+                        age=entry_age.days, max=max_age.days
+                    )
+                )
+
+        archive_reason = "; ".join(archive_reasons)
+
+        if should_archive:
+            feed = feedbin_api.get_feed(feed_id)
             print("")
             entry_title = entry.get("title")
             if not entry_title and entry["summary"]:
@@ -235,15 +301,12 @@ def run_archive(feedbin_api, rules, dry_run):
                     feed_title=feed["title"], entry_title=entry_title
                 )
             )
-            print(
-                "{age:d} days old (max age is {max:d} days)".format(
-                    age=entry_age.days, max=max_age.days
-                )
-            )
+            print(archive_reason)
             print(entry["url"])
             if not dry_run:
                 feedbin_api.mark_read(entry["id"])
             count += 1
+
     print("")
     print("{:d} entries affected.".format(count))
 
