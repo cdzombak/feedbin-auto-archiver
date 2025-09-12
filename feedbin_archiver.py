@@ -6,7 +6,7 @@ import json
 import os
 import re
 import sys
-from typing import Final
+from typing import Any, Dict, Final, Generator, List, Optional, Tuple
 
 import commentjson
 import requests
@@ -18,7 +18,7 @@ load_dotenv()
 TIMEOUT: Final = 20
 
 
-def chunks(a_list, n):
+def chunks(a_list: List[Any], n: int) -> Generator[List[Any], None, None]:
     # https://chrisalbon.com/python/data_wrangling/break_list_into_chunks_of_equal_size/
     # For item i in a range that is a length of l,
     for i in range(0, len(a_list), n):
@@ -26,22 +26,22 @@ def chunks(a_list, n):
         yield a_list[i : i + n]
 
 
-def truncate_string_with_ellipsis(s, max_len):
+def truncate_string_with_ellipsis(s: str, max_len: int) -> str:
     return (s[: max_len - 3] + "...") if len(s) > max_len else s
 
 
-def eprint(*args, **kwargs):
+def eprint(*args: Any, **kwargs: Any) -> None:
     print(*args, file=sys.stderr, **kwargs)
 
 
-def parse_entry_date(entry):
+def parse_entry_date(entry: Dict[str, Any]) -> dt.datetime:
     """Parse the published date from an entry and return as UTC datetime."""
     return dt.datetime.strptime(entry["published"], "%Y-%m-%dT%H:%M:%S.%fZ").replace(
         tzinfo=dt.timezone.utc
     )
 
 
-def str2bool(v):
+def str2bool(v: str) -> bool:
     if v.lower() in ("yes", "true", "t", "y", "1"):
         return True
     elif v.lower() in ("no", "false", "f", "n", "0"):
@@ -56,8 +56,13 @@ class FeedbinAPI(object):
 
     class APIException(Exception):
         def __init__(
-            self, message=None, status_code=None, errors=None, url=None, method=None
-        ):
+            self,
+            message: Optional[str] = None,
+            status_code: Optional[int] = None,
+            errors: Optional[List[str]] = None,
+            url: Optional[str] = None,
+            method: Optional[str] = None,
+        ) -> None:
             if errors and not message:
                 message = json.dumps(errors)
             super(FeedbinAPI.APIException, self).__init__(message)
@@ -67,7 +72,7 @@ class FeedbinAPI(object):
             self.method = method
 
         @property
-        def human_str(self):
+        def human_str(self) -> str:
             return (
                 "Feedbin API Error: {msg:s}\n{method:s}: {url:s}\n"
                 "HTTP Status: {status}\nError Detail:\n{detail}"
@@ -81,10 +86,10 @@ class FeedbinAPI(object):
 
     API_BASE = "https://api.feedbin.com/v2"
 
-    def __init__(self, username, password):
-        self.auth = (username, password)
+    def __init__(self, username: str, password: str) -> None:
+        self.auth: Tuple[str, str] = (username, password)
 
-    def _check_response(self, r):
+    def _check_response(self, r: requests.Response) -> None:
         if r.status_code == 401:
             raise FeedbinAPI.AuthException()
         if r.status_code != 200:
@@ -97,7 +102,9 @@ class FeedbinAPI(object):
                 url=r.request.url,
             )
 
-    def _get_all_pages(self, endpoint, params=None):
+    def _get_all_pages(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         if params is None:
             params = {}
         params["page"] = 1
@@ -111,7 +118,9 @@ class FeedbinAPI(object):
             next_url = resp.links.get("next")
         return results
 
-    def _get(self, endpoint, params=None):
+    def _get(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
         url = "{base:s}/{endpoint:s}.json".format(
             base=FeedbinAPI.API_BASE, endpoint=endpoint
         )
@@ -119,10 +128,12 @@ class FeedbinAPI(object):
         self._check_response(resp)
         return resp
 
-    def _get_decoded(self, endpoint, params=None):
+    def _get_decoded(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> Any:
         return self._get(endpoint, params).json()
 
-    def get_unread_entries(self):
+    def get_unread_entries(self) -> List[Dict[str, Any]]:
         entry_ids_chunks = list(chunks(self._get_decoded("unread_entries"), 100))
         entries = []
         for entry_ids in entry_ids_chunks:
@@ -134,16 +145,16 @@ class FeedbinAPI(object):
             )
         return entries
 
-    def get_subscriptions(self):
+    def get_subscriptions(self) -> List[Dict[str, Any]]:
         return self._get_decoded("subscriptions")
 
-    def get_feed(self, feed_id):
+    def get_feed(self, feed_id: int) -> Dict[str, Any]:
         return self._get_decoded("feeds/{}".format(feed_id))
 
-    def check_auth(self):
+    def check_auth(self) -> None:
         self._get("authentication")
 
-    def mark_read(self, entry_id):
+    def mark_read(self, entry_id: int) -> None:
         url = "{base:s}/{endpoint:s}.json".format(
             base=FeedbinAPI.API_BASE, endpoint="unread_entries"
         )
@@ -160,15 +171,15 @@ class Rules(object):
     class ValidationException(Exception):
         pass
 
-    def __init__(self, max_age, only_feed_id=None):
-        self.default_max_age = max_age
-        self.only_feed_id = only_feed_id
-        self.feed_rules = {}
-        self.keep_n_rules = {}
-        self.title_regex_rules = {}
-        self.title_regex_keep_n_rules = {}
+    def __init__(self, max_age: int, only_feed_id: Optional[int] = None) -> None:
+        self.default_max_age: int = max_age
+        self.only_feed_id: Optional[int] = only_feed_id
+        self.feed_rules: Dict[int, int] = {}
+        self.keep_n_rules: Dict[int, int] = {}
+        self.title_regex_rules: Dict[str, int] = {}
+        self.title_regex_keep_n_rules: Dict[str, int] = {}
 
-    def add_rules(self, rules_dict):
+    def add_rules(self, rules_dict: Dict[str, Any]) -> None:
         if "max_age" in rules_dict:
             self.default_max_age = int(rules_dict["max_age"])
 
@@ -238,7 +249,7 @@ class Rules(object):
                 "Rules file must contain either feed_specific or title_regex rules."
             )
 
-    def max_age(self, feed_id, feed_title=None):
+    def max_age(self, feed_id: int, feed_title: Optional[str] = None) -> dt.timedelta:
         # Collect all applicable max_age rules
         applicable_max_ages = [self.default_max_age]
 
@@ -259,7 +270,7 @@ class Rules(object):
             return dt.timedelta.max
         return dt.timedelta(days=retv)
 
-    def keep_n(self, feed_id, feed_title=None):
+    def keep_n(self, feed_id: int, feed_title: Optional[str] = None) -> Optional[int]:
         """Return the keep_n value for a feed, or None if not using keep_n."""
         # Collect all applicable keep_n rules
         applicable_keep_ns = []
@@ -281,7 +292,7 @@ class Rules(object):
             return None  # Skip keep_n logic for feeds not being processed
         return retv
 
-    def uses_keep_n(self, feed_id, feed_title=None):
+    def uses_keep_n(self, feed_id: int, feed_title: Optional[str] = None) -> bool:
         """Check if a feed uses keep_n logic."""
         # Check if feed has feed-specific keep_n rule
         if feed_id in self.keep_n_rules:
@@ -295,7 +306,7 @@ class Rules(object):
 
         return False
 
-    def uses_max_age(self, feed_id, feed_title=None):
+    def uses_max_age(self, feed_id: int, feed_title: Optional[str] = None) -> bool:
         """Check if a feed uses max_age logic."""
         # Check if feed has feed-specific max_age rule
         if feed_id in self.feed_rules:
@@ -310,7 +321,7 @@ class Rules(object):
         # Use max_age if no keep_n rules apply (fallback to default behavior)
         return not self.uses_keep_n(feed_id, feed_title)
 
-    def validate_rules(self, feeds):
+    def validate_rules(self, feeds: List[Dict[str, Any]]) -> None:
         all_feed_ids = list(self.feed_rules.keys()) + list(self.keep_n_rules.keys())
         if self.only_feed_id is not None:
             all_feed_ids.append(self.only_feed_id)
@@ -323,7 +334,7 @@ class Rules(object):
                 )
 
 
-def list_feeds(feedbin_api):
+def list_feeds(feedbin_api: FeedbinAPI) -> None:
     feeds = feedbin_api.get_subscriptions()
     feeds.sort(key=lambda f: f["title"].lower())
     for f in feeds:
@@ -334,7 +345,7 @@ def list_feeds(feedbin_api):
         )
 
 
-def run_archive(feedbin_api, rules, dry_run):
+def run_archive(feedbin_api: FeedbinAPI, rules: Rules, dry_run: bool) -> None:
     if dry_run:
         print("Listing entries which would be archived...")
     else:
@@ -354,7 +365,7 @@ def run_archive(feedbin_api, rules, dry_run):
         feeds_by_id[feed_id] = feedbin_api.get_feed(feed_id)
 
     # Track counts per feed for keep_n logic
-    feed_counts = {}
+    feed_counts: Dict[int, int] = {}
     count = 0
 
     for entry in entries:

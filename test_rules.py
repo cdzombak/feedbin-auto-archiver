@@ -18,7 +18,7 @@ from feedbin_archiver import Rules
 class TestRules(unittest.TestCase):
     """Test cases for the Rules class."""
 
-    def test_basic_feed_rules(self):
+    def test_basic_feed_rules(self) -> None:
         """Test basic feed-specific rules."""
         rules = Rules(30)  # default max_age = 30
         rules.add_rules(
@@ -49,7 +49,7 @@ class TestRules(unittest.TestCase):
         self.assertTrue(rules.uses_max_age(100))
         self.assertFalse(rules.uses_max_age(200))  # uses keep_n instead
 
-    def test_basic_title_regex_rules(self):
+    def test_basic_title_regex_rules(self) -> None:
         """Test basic title regex rules."""
         rules = Rules(30)
         rules.add_rules(
@@ -79,7 +79,7 @@ class TestRules(unittest.TestCase):
         self.assertFalse(rules.uses_keep_n(100, "Daily News"))
         self.assertTrue(rules.uses_max_age(100, "Daily News"))
 
-    def test_aggressive_prioritization(self):
+    def test_aggressive_prioritization(self) -> None:
         """Test that most aggressive rules win when multiple rules apply."""
         rules = Rules(30)
         rules.add_rules(
@@ -114,7 +114,7 @@ class TestRules(unittest.TestCase):
             rules.keep_n(200, "Breaking Newsletter"), 1
         )  # min(8, 2, 1) = 1
 
-    def test_edge_cases(self):
+    def test_edge_cases(self) -> None:
         """Test edge cases and error handling."""
         # Test with no rules defined
         rules = Rules(15)
@@ -148,7 +148,7 @@ class TestRules(unittest.TestCase):
                 {"title_regex": [{"title_regex": "test"}]}
             )  # missing max_age/keep_n
 
-    def test_rule_combinations(self):
+    def test_rule_combinations(self) -> None:
         """Test various combinations of rules to ensure correctness."""
         rules = Rules(30)
         rules.add_rules(
