@@ -93,9 +93,26 @@ jobs:
             megalinter-reports
             mega-linter.log
 
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+      - name: Run rule logic tests
+        run: python test_rules.py
+
   docker:
     name: Docker Images
-    needs: [lint, meta]
+    needs: [lint, test, meta]
     if: needs.meta.outputs.is_running_version_tag_update != 'true'
     runs-on: ubuntu-latest
     permissions:
@@ -171,7 +188,7 @@ jobs:
 
   release:
     name: GitHub (Pre)Release
-    needs: [lint, meta]
+    needs: [lint, test, meta]
     if: >-
       needs.meta.outputs.is_release == 'true' ||
       needs.meta.outputs.is_prerelease == 'true'

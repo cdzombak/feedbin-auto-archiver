@@ -10,7 +10,7 @@ The same is true of podcasts. To help with that, Pocket Casts has an auto-archiv
 
 With RSS, I find myself hesitant to mark a long list of entries as read; I can’t help but worry, “what if there’s something I really should read down there somewhere?”
 
-So I built this tool. It’s designed to be run on a periodic basis (2-4 times per day, perhaps). It will mark as read everything in your Feedbin account older than some time period (30 days, by default), and it allows configuring a custom maximum unread “age” per feed.
+So I built this tool. It's designed to be run on a periodic basis (2-4 times per day, perhaps). It will mark as read everything in your Feedbin account older than some time period (30 days, by default), and it allows configuring custom archiving rules both per-feed and by feed title patterns using regular expressions.
 
 ### See Also
 
@@ -56,27 +56,100 @@ Your credentials can be stored in a `.env` file alongside the `feedbin_archiver.
 
 ### Rules File
 
-The rules file is a JSON file specifying per-feed maximum entry ages. The file is allowed to contain comments, allowing for clarity & easier maintenance. See `rules.sample.json` for an example.
+The rules file is a JSON file specifying per-feed maximum entry ages and entry count limits. The file is allowed to contain comments, allowing for clarity & easier maintenance. See `rules.sample.json` for an example.
 
-The file must contain an object with two top-level keys: `max_age` and `feed_specific`.
+#### Rule Types
 
-`max_age` is equivalent to the `--max-age` argument; any entries older than that age will be marked as read, unless they’re in a feed for which you’ve created a custom rule.
+The file supports two types of rules:
 
-`feed_specific` is a list of objects, each of which have two keys, like this:
+1. **Feed-specific rules** (`feed_specific`): Rules that apply to specific feed IDs
+2. **Title regex rules** (`title_regex`): Rules that apply to feeds whose titles match regex patterns
+
+Both rule types support two parameters:
+- `max_age`: Archive entries older than this many days
+- `keep_n`: Keep only the N most recent entries (archive the rest)
+
+#### Rule Prioritization
+
+**When multiple rules apply to a feed, the system uses the MOST AGGRESSIVE values** (smallest `max_age` and `keep_n`) across all matching rules. This ensures maximum archiving efficiency.
+
+For example, if a feed matches both a feed-specific rule (`max_age: 7`) and a title regex rule (`max_age: 3`), the system will use `max_age: 3`.
+
+#### Configuration Structure
 
 ```javascript
-"feed_specific": [
+{
+  "max_age": 30,  // Global default (overrides --max-age argument)
+  
+  // Rules for specific feed IDs
+  "feed_specific": [
     {
-        // Add comment with Feed Name for maintainability
-        "feed_id": 450,
-        "max_age": 1
-    }, // …
+      "feed_id": 450,
+      "max_age": 7        // Archive after 7 days
+    },
+    {
+      "feed_id": 789,
+      "keep_n": 5         // Keep only 5 recent entries
+    }
+  ],
+  
+  // Rules based on feed title patterns
+  "title_regex": [
+    {
+      "title_regex": "Daily",
+      "max_age": 3        // Archive daily feeds after 3 days
+    },
+    {
+      "title_regex": "Newsletter",
+      "keep_n": 2         // Keep only 2 recent newsletter entries
+    },
+    {
+      "title_regex": "(Breaking|Alert)",
+      "max_age": 1        // Archive breaking news after 1 day
+    }
+  ]
+}
+```
+
+Both `feed_specific` and `title_regex` sections are optional - you can use either or both as needed.
+
+#### Title Regex Examples
+
+Title regex rules use standard regular expression patterns to match feed titles. Here are some practical examples:
+
+```javascript
+"title_regex": [
+  {
+    "title_regex": "Daily",
+    "max_age": 3                    // Any feed with "Daily" in the title
+  },
+  {
+    "title_regex": "(?i)newsletter$",
+    "keep_n": 2                     // Case-insensitive match for feeds ending with "newsletter"
+  },
+  {
+    "title_regex": "(Breaking|Alert|Urgent)",
+    "max_age": 1                    // Feeds containing any of these words
+  },
+  {
+    "title_regex": "^Tech\\s+",
+    "max_age": 5                    // Feeds starting with "Tech " (escaped space)
+  },
+  {
+    "title_regex": "\\b(Blog|RSS)\\b",
+    "keep_n": 10                    // Word boundaries ensure exact word matches
+  }
 ]
 ```
 
-Those feed-specific rules take precedence over `max_age`. This allows you to set a quicker expiration for high-traffic feeds, or set a longer expiration for feeds with entries you really don’t want to miss.
+Common regex patterns:
+- `^pattern` - Matches feeds starting with "pattern"
+- `pattern$` - Matches feeds ending with "pattern"  
+- `(?i)pattern` - Case-insensitive matching
+- `(word1|word2)` - Matches either "word1" or "word2"
+- `\\b` - Word boundary (prevents partial word matches)
 
-### “Ignore This Feed”
+### "Ignore This Feed"
 
 To avoid the archiver marking anything as read in a given feed, specify `999999999` for the feed’s `max_age`. (That is roughly 2.7 million years.)
 
@@ -142,9 +215,11 @@ If a rules file is specified, the `--max-age` flag has no effect.
 
 ### List Feeds
 
-Run `python feedbin_archiver.py list-feeds` to print a list of your Feedbin feeds, along with their IDs, for use in writing per-feed rules.
+Run `python feedbin_archiver.py list-feeds` to print a list of your Feedbin feeds, along with their IDs and titles. This is useful for:
+- Finding feed IDs for `feed_specific` rules
+- Understanding feed title patterns for writing `title_regex` rules
 
-The output is grep-able. For example, to find my blog feed, try `python feedbin_archiver.py list-feeds | grep -i "chris dzombak"`
+The output is grep-able. For example, to find feeds containing "newsletter", try `python feedbin_archiver.py list-feeds | grep -i newsletter`
 
 (For Docker, run `docker run --rm --env-file .env cdzombak/feedbin-auto-archiver:1 list-feeds`.)
 

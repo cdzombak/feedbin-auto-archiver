@@ -1,26 +1,50 @@
-// Ages in this file are specified in days.
-{
-  // The --max-age argument will be ignored when using a rules file that specifies max_age globally.
-  "max_age": 45,
+// Sample configuration for feedbin-auto-archiver
+// Ages are specified in days
+//
+// RULE PRIORITIZATION: When multiple rules apply to a feed, the system uses the 
+// MOST AGGRESSIVE values (smallest max_age and keep_n) across all matching rules.
 
-  // feed_specific is also required.
-  // It could be an empty list (`[]`), but then why are you using a rules file?
+{
+  // Global default max_age (overrides --max-age argument)
+  "max_age": 30,
+
+  // Rules that apply to specific feed IDs
   "feed_specific": [
     {
-      // Add comment with Feed Name for maintainability
-      "feed_id": 450,
-      "max_age": 1
+      // Use feedbin_archiver.py list-feeds to find feed IDs
+      "feed_id": 123,
+      "max_age": 7        // Archive after 7 days
     },
     {
-      // Another Feed
-      "feed_id": 10761,
-      "keep_n": 2
+      "feed_id": 456,  
+      "keep_n": 3         // Keep only 3 most recent entries
     },
     {
-      // Feed with both max_age and keep_n (archives if EITHER condition is met)
-      "feed_id": 12345,
-      "max_age": 14,
-      "keep_n": 5
+      "feed_id": 789,
+      "max_age": 14,      // Archive after 14 days OR
+      "keep_n": 5         // keep only 5 recent (whichever is more aggressive)
+    }
+  ],
+
+  // Rules that apply to feeds whose titles match regex patterns
+  "title_regex": [
+    {
+      "title_regex": "Daily",
+      "max_age": 3        // Archive daily feeds after 3 days
     },
+    {
+      "title_regex": "Newsletter", 
+      "keep_n": 2         // Keep only 2 recent newsletter entries
+    },
+    {
+      "title_regex": "(Breaking|Alert)",
+      "max_age": 1        // Archive breaking news after 1 day  
+    }
   ]
 }
+
+// Examples of rule combination:
+// - Feed ID 123 titled "Daily Newsletter" would use:
+//   max_age = min(7, 3) = 3 days, keep_n = 2
+// - Feed titled "Breaking Daily News" would use: 
+//   max_age = min(30, 1, 3) = 1 day

@@ -4,6 +4,7 @@ import argparse
 import datetime as dt
 import json
 import os
+import re
 import sys
 from typing import Final
 
@@ -164,59 +165,146 @@ class Rules(object):
         self.only_feed_id = only_feed_id
         self.feed_rules = {}
         self.keep_n_rules = {}
+        self.title_regex_rules = {}
+        self.title_regex_keep_n_rules = {}
 
     def add_rules(self, rules_dict):
         if "max_age" in rules_dict:
             self.default_max_age = int(rules_dict["max_age"])
-        if "feed_specific" not in rules_dict:
-            raise Rules.SpecException(
-                "Rules file must contain a feed_specific rules list."
-            )
-        for rule in rules_dict["feed_specific"]:
-            if "feed_id" not in rule:
-                raise Rules.SpecException(
-                    "Feed rule {} must include a feed_id.".format(json.dumps(rule))
-                )
-
-            has_max_age = "max_age" in rule
-            has_keep_n = "keep_n" in rule
-
-            if not has_max_age and not has_keep_n:
-                raise Rules.SpecException(
-                    "Feed rule {} must include at least max_age or keep_n.".format(
-                        json.dumps(rule)
+        
+        # Handle feed_specific rules
+        if "feed_specific" in rules_dict:
+            for rule in rules_dict["feed_specific"]:
+                if "feed_id" not in rule:
+                    raise Rules.SpecException(
+                        "Feed rule {} must include a feed_id.".format(json.dumps(rule))
                     )
-                )
 
-            feed_id = int(rule["feed_id"])
-            if has_max_age:
-                self.feed_rules[feed_id] = int(rule["max_age"])
-            if has_keep_n:
-                self.keep_n_rules[feed_id] = int(rule["keep_n"])
+                has_max_age = "max_age" in rule
+                has_keep_n = "keep_n" in rule
 
-    def max_age(self, feed_id):
-        retv = self.default_max_age
+                if not has_max_age and not has_keep_n:
+                    raise Rules.SpecException(
+                        "Feed rule {} must include at least max_age or keep_n.".format(
+                            json.dumps(rule)
+                        )
+                    )
+
+                feed_id = int(rule["feed_id"])
+                if has_max_age:
+                    self.feed_rules[feed_id] = int(rule["max_age"])
+                if has_keep_n:
+                    self.keep_n_rules[feed_id] = int(rule["keep_n"])
+        
+        # Handle title_regex rules
+        if "title_regex" in rules_dict:
+            for rule in rules_dict["title_regex"]:
+                if "title_regex" not in rule:
+                    raise Rules.SpecException(
+                        "Title regex rule {} must include a title_regex.".format(json.dumps(rule))
+                    )
+
+                has_max_age = "max_age" in rule
+                has_keep_n = "keep_n" in rule
+
+                if not has_max_age and not has_keep_n:
+                    raise Rules.SpecException(
+                        "Title regex rule {} must include at least max_age or keep_n.".format(
+                            json.dumps(rule)
+                        )
+                    )
+
+                # Validate regex pattern
+                try:
+                    re.compile(rule["title_regex"])
+                except re.error as e:
+                    raise Rules.SpecException(
+                        "Invalid regex pattern '{}': {}".format(rule["title_regex"], str(e))
+                    )
+
+                regex_pattern = rule["title_regex"]
+                if has_max_age:
+                    self.title_regex_rules[regex_pattern] = int(rule["max_age"])
+                if has_keep_n:
+                    self.title_regex_keep_n_rules[regex_pattern] = int(rule["keep_n"])
+        
+        # Require at least one rule type
+        if "feed_specific" not in rules_dict and "title_regex" not in rules_dict:
+            raise Rules.SpecException(
+                "Rules file must contain either feed_specific or title_regex rules."
+            )
+    
+    def max_age(self, feed_id, feed_title=None):
+        # Collect all applicable max_age rules
+        applicable_max_ages = [self.default_max_age]
+        
+        # Add feed-specific max_age rule if it exists
         if feed_id in self.feed_rules:
-            retv = self.feed_rules[feed_id]
+            applicable_max_ages.append(self.feed_rules[feed_id])
+        
+        # Add all matching title regex max_age rules
+        if feed_title:
+            for regex_pattern, max_age_value in self.title_regex_rules.items():
+                if re.search(regex_pattern, feed_title):
+                    applicable_max_ages.append(max_age_value)
+        
+        # Use the most aggressive (smallest) max_age
+        retv = min(applicable_max_ages)
+            
         if self.only_feed_id is not None and feed_id != self.only_feed_id:
             return dt.timedelta.max
         return dt.timedelta(days=retv)
 
-    def keep_n(self, feed_id):
+    def keep_n(self, feed_id, feed_title=None):
         """Return the keep_n value for a feed, or None if not using keep_n."""
+        # Collect all applicable keep_n rules
+        applicable_keep_ns = []
+        
+        # Add feed-specific keep_n rule if it exists
         if feed_id in self.keep_n_rules:
-            if self.only_feed_id is not None and feed_id != self.only_feed_id:
-                return None  # Skip keep_n logic for feeds not being processed
-            return self.keep_n_rules[feed_id]
-        return None
+            applicable_keep_ns.append(self.keep_n_rules[feed_id])
+        
+        # Add all matching title regex keep_n rules
+        if feed_title:
+            for regex_pattern, keep_n_value in self.title_regex_keep_n_rules.items():
+                if re.search(regex_pattern, feed_title):
+                    applicable_keep_ns.append(keep_n_value)
+        
+        # Use the most aggressive (smallest) keep_n, or None if no keep_n rules apply
+        retv = min(applicable_keep_ns) if applicable_keep_ns else None
+            
+        if self.only_feed_id is not None and feed_id != self.only_feed_id:
+            return None  # Skip keep_n logic for feeds not being processed
+        return retv
 
-    def uses_keep_n(self, feed_id):
+    def uses_keep_n(self, feed_id, feed_title=None):
         """Check if a feed uses keep_n logic."""
-        return feed_id in self.keep_n_rules
+        # Check if feed has feed-specific keep_n rule
+        if feed_id in self.keep_n_rules:
+            return True
+        
+        # Check if feed title matches any title regex keep_n rule
+        if feed_title:
+            for regex_pattern in self.title_regex_keep_n_rules:
+                if re.search(regex_pattern, feed_title):
+                    return True
+        
+        return False
 
-    def uses_max_age(self, feed_id):
+    def uses_max_age(self, feed_id, feed_title=None):
         """Check if a feed uses max_age logic."""
-        return feed_id in self.feed_rules or feed_id not in self.keep_n_rules
+        # Check if feed has feed-specific max_age rule
+        if feed_id in self.feed_rules:
+            return True
+        
+        # Check if feed title matches any title regex max_age rule
+        if feed_title:
+            for regex_pattern in self.title_regex_rules:
+                if re.search(regex_pattern, feed_title):
+                    return True
+        
+        # Use max_age if no keep_n rules apply (fallback to default behavior)
+        return not self.uses_keep_n(feed_id, feed_title)
 
     def validate_rules(self, feeds):
         all_feed_ids = list(self.feed_rules.keys()) + list(self.keep_n_rules.keys())
@@ -255,6 +343,12 @@ def run_archive(feedbin_api, rules, dry_run):
         entry["parsed_date"] = parse_entry_date(entry)
     entries.sort(key=lambda e: e["parsed_date"], reverse=True)
 
+    # Preload all feeds to get titles for title regex matching
+    feeds_by_id = {}
+    unique_feed_ids = set(entry["feed_id"] for entry in entries)
+    for feed_id in unique_feed_ids:
+        feeds_by_id[feed_id] = feedbin_api.get_feed(feed_id)
+
     # Track counts per feed for keep_n logic
     feed_counts = {}
     count = 0
@@ -263,21 +357,22 @@ def run_archive(feedbin_api, rules, dry_run):
         feed_id = entry["feed_id"]
         entry_ts = entry["parsed_date"]
         entry_age = now - entry_ts
+        feed_title = feeds_by_id[feed_id]["title"]
 
         should_archive = False
         archive_reasons = []
 
-        if rules.uses_keep_n(feed_id):
+        if rules.uses_keep_n(feed_id, feed_title):
             feed_counts[feed_id] = feed_counts.get(feed_id, 0) + 1
-            keep_n = rules.keep_n(feed_id)
+            keep_n = rules.keep_n(feed_id, feed_title)
             if keep_n is not None and feed_counts[feed_id] > keep_n:
                 should_archive = True
                 archive_reasons.append(
                     "keeping only {keep:d} most recent entries".format(keep=keep_n)
                 )
 
-        if rules.uses_max_age(feed_id):
-            max_age = rules.max_age(feed_id)
+        if rules.uses_max_age(feed_id, feed_title):
+            max_age = rules.max_age(feed_id, feed_title)
             if entry_age > max_age:
                 should_archive = True
                 archive_reasons.append(
@@ -289,7 +384,7 @@ def run_archive(feedbin_api, rules, dry_run):
         archive_reason = "; ".join(archive_reasons)
 
         if should_archive:
-            feed = feedbin_api.get_feed(feed_id)
+            feed = feeds_by_id[feed_id]
             print("")
             entry_title = entry.get("title")
             if not entry_title and entry["summary"]:
