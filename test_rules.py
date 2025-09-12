@@ -20,13 +20,15 @@ def test_basic_feed_rules():
     print("Testing basic feed-specific rules...")
 
     rules = Rules(30)  # default max_age = 30
-    rules.add_rules({
-        "feed_specific": [
-            {"feed_id": 100, "max_age": 5},
-            {"feed_id": 200, "keep_n": 3},
-            {"feed_id": 300, "max_age": 10, "keep_n": 2}
-        ]
-    })
+    rules.add_rules(
+        {
+            "feed_specific": [
+                {"feed_id": 100, "max_age": 5},
+                {"feed_id": 200, "keep_n": 3},
+                {"feed_id": 300, "max_age": 10, "keep_n": 2},
+            ]
+        }
+    )
 
     # Test feed-specific max_age
     assert rules.max_age(100).days == 5
@@ -54,13 +56,15 @@ def test_basic_title_regex_rules():
     print("Testing basic title regex rules...")
 
     rules = Rules(30)
-    rules.add_rules({
-        "title_regex": [
-            {"title_regex": "Daily", "max_age": 3},
-            {"title_regex": "Newsletter", "keep_n": 2},
-            {"title_regex": "(?i)blog$", "max_age": 7, "keep_n": 5}
-        ]
-    })
+    rules.add_rules(
+        {
+            "title_regex": [
+                {"title_regex": "Daily", "max_age": 3},
+                {"title_regex": "Newsletter", "keep_n": 2},
+                {"title_regex": "(?i)blog$", "max_age": 7, "keep_n": 5},
+            ]
+        }
+    )
 
     # Test title regex max_age
     assert rules.max_age(100, "Daily News").days == 3
@@ -87,29 +91,31 @@ def test_aggressive_prioritization():
     print("Testing aggressive rule prioritization...")
 
     rules = Rules(30)
-    rules.add_rules({
-        "feed_specific": [
-            {"feed_id": 100, "max_age": 10},
-            {"feed_id": 200, "keep_n": 8}
-        ],
-        "title_regex": [
-            {"title_regex": "Daily", "max_age": 3},
-            {"title_regex": "Newsletter", "keep_n": 2},
-            {"title_regex": "Breaking", "max_age": 1, "keep_n": 1}
-        ]
-    })
+    rules.add_rules(
+        {
+            "feed_specific": [
+                {"feed_id": 100, "max_age": 10},
+                {"feed_id": 200, "keep_n": 8},
+            ],
+            "title_regex": [
+                {"title_regex": "Daily", "max_age": 3},
+                {"title_regex": "Newsletter", "keep_n": 2},
+                {"title_regex": "Breaking", "max_age": 1, "keep_n": 1},
+            ],
+        }
+    )
 
     # Feed-specific vs title regex - most aggressive wins
     assert rules.max_age(100, "Daily Update").days == 3  # 3 < 10
-    assert rules.keep_n(200, "Weekly Newsletter") == 2   # 2 < 8
+    assert rules.keep_n(200, "Weekly Newsletter") == 2  # 2 < 8
 
     # Multiple title regex rules - most aggressive wins
     assert rules.max_age(300, "Daily Breaking News").days == 1  # min(3, 1) = 1
-    assert rules.keep_n(300, "Breaking Newsletter") == 1        # min(2, 1) = 1
+    assert rules.keep_n(300, "Breaking Newsletter") == 1  # min(2, 1) = 1
 
     # All types combined
     assert rules.max_age(100, "Daily Breaking News").days == 1  # min(10, 3, 1) = 1
-    assert rules.keep_n(200, "Breaking Newsletter") == 1        # min(8, 2, 1) = 1
+    assert rules.keep_n(200, "Breaking Newsletter") == 1  # min(8, 2, 1) = 1
 
     print("✓ Aggressive rule prioritization works correctly")
 
@@ -148,7 +154,9 @@ def test_edge_cases():
 
     try:
         rules = Rules(10)
-        rules.add_rules({"title_regex": [{"title_regex": "test"}]})  # missing max_age/keep_n
+        rules.add_rules(
+            {"title_regex": [{"title_regex": "test"}]}
+        )  # missing max_age/keep_n
         assert False, "Should have raised SpecException"
     except Rules.SpecException:
         pass  # Expected
@@ -161,34 +169,36 @@ def test_rule_combinations():
     print("Testing rule combinations...")
 
     rules = Rules(30)
-    rules.add_rules({
-        "max_age": 25,  # Override default
-        "feed_specific": [
-            {"feed_id": 100, "max_age": 5},
-            {"feed_id": 200, "keep_n": 10}
-        ],
-        "title_regex": [
-            {"title_regex": "Important", "max_age": 15, "keep_n": 12},
-            {"title_regex": "Urgent", "max_age": 2},
-            {"title_regex": "Archive", "keep_n": 1}
-        ]
-    })
+    rules.add_rules(
+        {
+            "max_age": 25,  # Override default
+            "feed_specific": [
+                {"feed_id": 100, "max_age": 5},
+                {"feed_id": 200, "keep_n": 10},
+            ],
+            "title_regex": [
+                {"title_regex": "Important", "max_age": 15, "keep_n": 12},
+                {"title_regex": "Urgent", "max_age": 2},
+                {"title_regex": "Archive", "keep_n": 1},
+            ],
+        }
+    )
 
     # Global max_age override
     assert rules.max_age(999).days == 25
 
     # Feed + multiple regex matches
     feed_title = "Important Urgent News"
-    assert rules.max_age(100, feed_title).days == 2   # min(5, 15, 2) = 2
-    assert rules.keep_n(200, feed_title) == 10        # min(10, 12) = 10
+    assert rules.max_age(100, feed_title).days == 2  # min(5, 15, 2) = 2
+    assert rules.keep_n(200, feed_title) == 10  # min(10, 12) = 10
 
     # Just regex matches
     assert rules.max_age(300, "Important Archive").days == 15  # min(25, 15) = 15
-    assert rules.keep_n(300, "Important Archive") == 1         # min(12, 1) = 1
+    assert rules.keep_n(300, "Important Archive") == 1  # min(12, 1) = 1
 
     # Mix of rules with some not applying
-    assert rules.max_age(400, "Urgent Update").days == 2     # min(25, 2) = 2
-    assert rules.keep_n(400, "Archive This") == 1            # only Archive applies
+    assert rules.max_age(400, "Urgent Update").days == 2  # min(25, 2) = 2
+    assert rules.keep_n(400, "Archive This") == 1  # only Archive applies
 
     print("✓ Rule combinations work correctly")
 

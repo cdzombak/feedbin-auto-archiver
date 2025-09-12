@@ -201,7 +201,9 @@ class Rules(object):
             for rule in rules_dict["title_regex"]:
                 if "title_regex" not in rule:
                     raise Rules.SpecException(
-                        "Title regex rule {} must include a title_regex.".format(json.dumps(rule))
+                        "Title regex rule {} must include a title_regex.".format(
+                            json.dumps(rule)
+                        )
                     )
 
                 has_max_age = "max_age" in rule
@@ -219,7 +221,9 @@ class Rules(object):
                     re.compile(rule["title_regex"])
                 except re.error as e:
                     raise Rules.SpecException(
-                        "Invalid regex pattern '{}': {}".format(rule["title_regex"], str(e))
+                        "Invalid regex pattern '{}': {}".format(
+                            rule["title_regex"], str(e)
+                        )
                     )
 
                 regex_pattern = rule["title_regex"]

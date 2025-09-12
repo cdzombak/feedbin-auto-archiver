@@ -79,35 +79,35 @@ For example, if a feed matches both a feed-specific rule (`max_age: 7`) and a ti
 
 ```javascript
 {
-  "max_age": 30,  // Global default (overrides --max-age argument)
-  
-  // Rules for specific feed IDs
-  "feed_specific": [
-    {
-      "feed_id": 450,
-      "max_age": 7        // Archive after 7 days
-    },
-    {
-      "feed_id": 789,
-      "keep_n": 5         // Keep only 5 recent entries
-    }
-  ],
-  
-  // Rules based on feed title patterns
-  "title_regex": [
-    {
-      "title_regex": "Daily",
-      "max_age": 3        // Archive daily feeds after 3 days
-    },
-    {
-      "title_regex": "Newsletter",
-      "keep_n": 2         // Keep only 2 recent newsletter entries
-    },
-    {
-      "title_regex": "(Breaking|Alert)",
-      "max_age": 1        // Archive breaking news after 1 day
-    }
-  ]
+    "max_age": 30,  // Global default (overrides --max-age argument)
+
+    // Rules for specific feed IDs
+    "feed_specific": [
+        {
+            "feed_id": 450,
+            "max_age": 7        // Archive after 7 days
+        },
+        {
+            "feed_id": 789,
+            "keep_n": 5         // Keep only 5 recent entries
+        }
+    ],
+
+    // Rules based on feed title patterns
+    "title_regex": [
+        {
+            "title_regex": "Daily",
+            "max_age": 3        // Archive daily feeds after 3 days
+        },
+        {
+            "title_regex": "Newsletter",
+            "keep_n": 2         // Keep only 2 recent newsletter entries
+        },
+        {
+            "title_regex": "(Breaking|Alert)",
+            "max_age": 1        // Archive breaking news after 1 day
+        }
+    ]
 }
 ```
 
@@ -119,32 +119,32 @@ Title regex rules use standard regular expression patterns to match feed titles.
 
 ```javascript
 "title_regex": [
-  {
-    "title_regex": "Daily",
-    "max_age": 3                    // Any feed with "Daily" in the title
-  },
-  {
-    "title_regex": "(?i)newsletter$",
-    "keep_n": 2                     // Case-insensitive match for feeds ending with "newsletter"
-  },
-  {
-    "title_regex": "(Breaking|Alert|Urgent)",
-    "max_age": 1                    // Feeds containing any of these words
-  },
-  {
-    "title_regex": "^Tech\\s+",
-    "max_age": 5                    // Feeds starting with "Tech " (escaped space)
-  },
-  {
-    "title_regex": "\\b(Blog|RSS)\\b",
-    "keep_n": 10                    // Word boundaries ensure exact word matches
-  }
+    {
+        "title_regex": "Daily",
+        "max_age": 3                    // Any feed with "Daily" in the title
+    },
+    {
+        "title_regex": "(?i)newsletter$",
+        "keep_n": 2                     // Case-insensitive match for feeds ending with "newsletter"
+    },
+    {
+        "title_regex": "(Breaking|Alert|Urgent)",
+        "max_age": 1                    // Feeds containing any of these words
+    },
+    {
+        "title_regex": "^Tech\\s+",
+        "max_age": 5                    // Feeds starting with "Tech " (escaped space)
+    },
+    {
+        "title_regex": "\\b(Blog|RSS)\\b",
+        "keep_n": 10                    // Word boundaries ensure exact word matches
+    }
 ]
 ```
 
 Common regex patterns:
 - `^pattern` - Matches feeds starting with "pattern"
-- `pattern$` - Matches feeds ending with "pattern"  
+- `pattern$` - Matches feeds ending with "pattern"
 - `(?i)pattern` - Case-insensitive matching
 - `(word1|word2)` - Matches either "word1" or "word2"
 - `\\b` - Word boundary (prevents partial word matches)
