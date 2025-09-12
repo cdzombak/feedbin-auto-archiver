@@ -11,7 +11,6 @@ Tests the rule logic including:
 
 import datetime as dt
 import unittest
-from typing import Any
 
 from feedbin_archiver import Rules
 

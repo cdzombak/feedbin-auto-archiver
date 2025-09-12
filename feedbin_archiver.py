@@ -6,7 +6,7 @@ import json
 import os
 import re
 import sys
-from typing import Final, Generator, Any, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Final, Generator, List, Optional, Tuple
 
 import commentjson
 import requests
@@ -56,12 +56,12 @@ class FeedbinAPI(object):
 
     class APIException(Exception):
         def __init__(
-            self, 
-            message: Optional[str] = None, 
-            status_code: Optional[int] = None, 
-            errors: Optional[List[str]] = None, 
-            url: Optional[str] = None, 
-            method: Optional[str] = None
+            self,
+            message: Optional[str] = None,
+            status_code: Optional[int] = None,
+            errors: Optional[List[str]] = None,
+            url: Optional[str] = None,
+            method: Optional[str] = None,
         ) -> None:
             if errors and not message:
                 message = json.dumps(errors)
@@ -102,7 +102,9 @@ class FeedbinAPI(object):
                 url=r.request.url,
             )
 
-    def _get_all_pages(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _get_all_pages(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> List[Dict[str, Any]]:
         if params is None:
             params = {}
         params["page"] = 1
@@ -116,7 +118,9 @@ class FeedbinAPI(object):
             next_url = resp.links.get("next")
         return results
 
-    def _get(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> requests.Response:
+    def _get(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> requests.Response:
         url = "{base:s}/{endpoint:s}.json".format(
             base=FeedbinAPI.API_BASE, endpoint=endpoint
         )
@@ -124,7 +128,9 @@ class FeedbinAPI(object):
         self._check_response(resp)
         return resp
 
-    def _get_decoded(self, endpoint: str, params: Optional[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def _get_decoded(
+        self, endpoint: str, params: Optional[Dict[str, Any]] = None
+    ) -> Any:
         return self._get(endpoint, params).json()
 
     def get_unread_entries(self) -> List[Dict[str, Any]]:
@@ -359,7 +365,7 @@ def run_archive(feedbin_api: FeedbinAPI, rules: Rules, dry_run: bool) -> None:
         feeds_by_id[feed_id] = feedbin_api.get_feed(feed_id)
 
     # Track counts per feed for keep_n logic
-    feed_counts = {}
+    feed_counts: Dict[int, int] = {}
     count = 0
 
     for entry in entries:
