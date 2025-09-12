@@ -171,7 +171,7 @@ class Rules(object):
     def add_rules(self, rules_dict):
         if "max_age" in rules_dict:
             self.default_max_age = int(rules_dict["max_age"])
-        
+
         # Handle feed_specific rules
         if "feed_specific" in rules_dict:
             for rule in rules_dict["feed_specific"]:
@@ -195,13 +195,15 @@ class Rules(object):
                     self.feed_rules[feed_id] = int(rule["max_age"])
                 if has_keep_n:
                     self.keep_n_rules[feed_id] = int(rule["keep_n"])
-        
+
         # Handle title_regex rules
         if "title_regex" in rules_dict:
             for rule in rules_dict["title_regex"]:
                 if "title_regex" not in rule:
                     raise Rules.SpecException(
-                        "Title regex rule {} must include a title_regex.".format(json.dumps(rule))
+                        "Title regex rule {} must include a title_regex.".format(
+                            json.dumps(rule)
+                        )
                     )
 
                 has_max_age = "max_age" in rule
@@ -219,7 +221,9 @@ class Rules(object):
                     re.compile(rule["title_regex"])
                 except re.error as e:
                     raise Rules.SpecException(
-                        "Invalid regex pattern '{}': {}".format(rule["title_regex"], str(e))
+                        "Invalid regex pattern '{}': {}".format(
+                            rule["title_regex"], str(e)
+                        )
                     )
 
                 regex_pattern = rule["title_regex"]
@@ -227,30 +231,30 @@ class Rules(object):
                     self.title_regex_rules[regex_pattern] = int(rule["max_age"])
                 if has_keep_n:
                     self.title_regex_keep_n_rules[regex_pattern] = int(rule["keep_n"])
-        
+
         # Require at least one rule type
         if "feed_specific" not in rules_dict and "title_regex" not in rules_dict:
             raise Rules.SpecException(
                 "Rules file must contain either feed_specific or title_regex rules."
             )
-    
+
     def max_age(self, feed_id, feed_title=None):
         # Collect all applicable max_age rules
         applicable_max_ages = [self.default_max_age]
-        
+
         # Add feed-specific max_age rule if it exists
         if feed_id in self.feed_rules:
             applicable_max_ages.append(self.feed_rules[feed_id])
-        
+
         # Add all matching title regex max_age rules
         if feed_title:
             for regex_pattern, max_age_value in self.title_regex_rules.items():
                 if re.search(regex_pattern, feed_title):
                     applicable_max_ages.append(max_age_value)
-        
+
         # Use the most aggressive (smallest) max_age
         retv = min(applicable_max_ages)
-            
+
         if self.only_feed_id is not None and feed_id != self.only_feed_id:
             return dt.timedelta.max
         return dt.timedelta(days=retv)
@@ -259,20 +263,20 @@ class Rules(object):
         """Return the keep_n value for a feed, or None if not using keep_n."""
         # Collect all applicable keep_n rules
         applicable_keep_ns = []
-        
+
         # Add feed-specific keep_n rule if it exists
         if feed_id in self.keep_n_rules:
             applicable_keep_ns.append(self.keep_n_rules[feed_id])
-        
+
         # Add all matching title regex keep_n rules
         if feed_title:
             for regex_pattern, keep_n_value in self.title_regex_keep_n_rules.items():
                 if re.search(regex_pattern, feed_title):
                     applicable_keep_ns.append(keep_n_value)
-        
+
         # Use the most aggressive (smallest) keep_n, or None if no keep_n rules apply
         retv = min(applicable_keep_ns) if applicable_keep_ns else None
-            
+
         if self.only_feed_id is not None and feed_id != self.only_feed_id:
             return None  # Skip keep_n logic for feeds not being processed
         return retv
@@ -282,13 +286,13 @@ class Rules(object):
         # Check if feed has feed-specific keep_n rule
         if feed_id in self.keep_n_rules:
             return True
-        
+
         # Check if feed title matches any title regex keep_n rule
         if feed_title:
             for regex_pattern in self.title_regex_keep_n_rules:
                 if re.search(regex_pattern, feed_title):
                     return True
-        
+
         return False
 
     def uses_max_age(self, feed_id, feed_title=None):
@@ -296,13 +300,13 @@ class Rules(object):
         # Check if feed has feed-specific max_age rule
         if feed_id in self.feed_rules:
             return True
-        
+
         # Check if feed title matches any title regex max_age rule
         if feed_title:
             for regex_pattern in self.title_regex_rules:
                 if re.search(regex_pattern, feed_title):
                     return True
-        
+
         # Use max_age if no keep_n rules apply (fallback to default behavior)
         return not self.uses_keep_n(feed_id, feed_title)
 
