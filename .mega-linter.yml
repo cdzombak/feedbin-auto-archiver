@@ -13,6 +13,7 @@ DISABLE_LINTERS:
   - REPOSITORY_GRYPE
   - REPOSITORY_KICS
   - REPOSITORY_TRIVY
+  - REPOSITORY_SECRETLINT
 
 PLUGINS:
   - https://raw.githubusercontent.com/cdzombak/mega-linter-plugin-dockerfilelint/main/mega-linter-plugin-dockerfilelint/dockerfilelint.megalinter-descriptor.yml
